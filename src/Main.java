@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,31 +11,19 @@ public class Main {
 
     public static void main(String[] args) {
         String password;
-        Pattern regex = Pattern.compile("[^A-Za-z0-9]");
-        char[] validCharacters;
         int entropyScore;
-
         //Scanner to take in user input
         Scanner input = new Scanner(System.in);
-
         //Request password
         System.out.println("Enter New Password: ");
         password = input.nextLine();
-
-        //until methods are figured out
-        entropyScore = -99;
+        entropyScore = calculateEntropy(password);
 
         //Debugging todo: remove before submission
         System.out.println("Password is: " + password);
         System.out.println("Entropy is: " + entropyScore);
-
-        //Until I have time to utilize a regex pattern todo: implement Regex comparator
-        //Lowercase characters
-        validCharacters = new char[]{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                //Uppercase characters
-                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-                //Special Characters
-                ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '>', '=', '?', '@', '[', ']', '\\', '^', '_', '`', '{', '|', '}', '~'};
+        evaluateEntropy(entropyScore);
+        System.out.println();
 
         int specialCharacterCount = countSpecialCharacters(password);
 
@@ -49,12 +38,22 @@ public class Main {
         System.out.println("Trimmed Length: \t " + trimmedLength(password));
         System.out.println("Truncated Password:\t" + truncate(password, 20));
         System.out.println("Log2 of " + number + ":\t\t" + log2(number));
+
     }//end main
 
 
+    //Determine the number of types of special characters in the string
     public static int countSpecialCharacters(String s) {
         spliterator = s.toCharArray();
+        ArrayList<Character> temp = new ArrayList<>();
         int ret = 0;
+
+        //Remove repeated characters
+        for (int i = 0; i<= spliterator.length - 1; i++){
+            if(temp.contains(spliterator[i]))
+                spliterator[i] = '0';
+            else temp.add(spliterator[i]);
+        }
         //Scan password against regex pattern to determine number of special characters
         for (int i = 0; i <= spliterator.length - 1; i++) {
             matcher = regex.matcher(String.valueOf(spliterator[i]));
@@ -64,7 +63,7 @@ public class Main {
         return ret;//todo, checks for the number of special characters used in password
     }//end countSpecialCharacters
 
-    private static boolean hasDigit(String s) {
+    public static boolean hasDigit(String s) {
         boolean ret = false;
         //Check password for digits
         if (s.matches(".*\\d+.*"))
@@ -72,21 +71,21 @@ public class Main {
         return ret;//todo, checks if password contains a numeric value
     }//end hasDigit
 
-    private static boolean hasUpperCase(String s) {
+    public static boolean hasUpperCase(String s) {
         boolean ret = false;
         if (!s.equals(s.toLowerCase()))
             ret = true;
         return ret;//todo, checks if password contains an uppercase character
     }//end hasUpperCase
 
-    private static boolean hasLowerCase(String s) {
+    public static boolean hasLowerCase(String s) {
         boolean ret = false;
         if(!s.equals(s.toUpperCase()))
             ret = true;
         return ret;//todo, checks if password contains a lowercase character
     }//end hasLowerCase
 
-    private static int trimmedLength(String s) {
+    public static int trimmedLength(String s) {
         int ret;
         String temp;
         temp = s.trim();
@@ -94,8 +93,18 @@ public class Main {
         return ret;
     }//end trimmedLength
 
-    private static int calculateRange(String s, String allowedCharacters) {
+    public static int calculateRange(String s) {
         int ret = 0;
+
+        if(hasUpperCase(s))
+            ret+=26;
+        if(hasLowerCase(s))
+            ret+=26;
+        if(hasDigit(s))
+            ret += 10;
+        ret+=countSpecialCharacters(s);
+
+
         return ret;//todo, Calculates the range of a string
         /*Range starts at 0;
           Add 26 if the string contains an uppercase letter
@@ -105,7 +114,7 @@ public class Main {
         */
     }//end calculateRange
 
-    private static String truncate(String s, int n) {
+    public static String truncate(String s, int n) {
         spliterator = s.toCharArray();
         String ret = "";
         if (s.length() <= n)
@@ -122,26 +131,63 @@ public class Main {
         return ret;//todo, return the first n characters of password appended by (...).
         //If n > password.length return password.
     }//end truncate
+    //Overloaded to allow for truncating numbers
+    public static int truncate(double n){
+        int ret = ((int) n);
+        return ret;
+    }
 
-    private static double log2(double x) {
+    //returns log of x in base 2
+    public static double log2(double x) {
         double ret = Math.log(x)/Math.log(2);
         ret = Math.round((ret * 10000.0000)/10000.0000);
 
-
-        return ret;//todo, returns log of x in base 2.
-        //Tests should be run to 0.0001 precision.
-        //Calculate the answer in unit tests from an independent source such as a calculator
+        return ret;
     }//end log2
 
-    private static int calculateEntropy(String s, String allowedCharacters) {
-        int ret = 0;
-        return ret;//todo, calculate the level of entropy of the password.
-        //calculate to 0.1 level of precision
+    public static int calculateEntropy(String s) {
+        //maxEntropy = log2(range^(length-1)
+        double maxEntropy;
+        double range = calculateRange(s);
+        double length;
+
+        length = s.length();
+
+        maxEntropy = log2(Math.pow(range,(length - 1)));
+
+        int ret = truncate(maxEntropy);
+
+        return ret;
+
+
+/*
+where
+E is an integer representing the maximum entropy. (Truncate the decimal part; don't round)
+R is the range of the characters.
+    range is 26 if only lower case letters are used
+    range is 52 if upper and lower case letters are used
+    range is 62 if upper, lower, and digits are used.
+    range is 67 if upper, lower, digits, and 5 special characters are used.
+     range is 72 if upper, lower, digits, and 10 special characters are used.
+*/
     }//end calculateEntropy
 
-    private static String evaluateEntropy(double entropy) {
-        String ret = "test";
-        return ret;//todo, evaluate the level of Entropy of the password and display password strength.
+    public static void evaluateEntropy(double entropy) {
+        String ret = "Test_Value";
+        //Evaluate Entropy
+        if(entropy <= 64)
+            ret = "Very Weak";
+        else if(entropy >64 && entropy <= 80)
+            ret = "Weak";
+        else if(entropy >80 && entropy <= 112)
+            ret = "Moderate";
+        else if(entropy >112 && entropy <= 128)
+            ret = "Strong";
+        else if(entropy >128)
+            ret = "Very Strong";
+        //Print Evaluation
+        System.out.println(ret);
+
         /*
         Entropy Strength Scale
         -----------------------
